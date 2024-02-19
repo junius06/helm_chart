@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "backend.fullname" $ }}-common-configmap
+  labels:
+    {{- include "backend.labels" $ | nindent 4 }}
+data:
+  DB_HOST: "{{ template "mysql.primary.fullname" .Subcharts.mysql }}"
+  DB_PORT: "3306"
+  DB_PW: "{{ .Values.mysql.auth.rootPassword }}"
+  INFLUX_HOST: "{{ template "common.names.fullname" ( index .Subcharts "influxdb" ) }}"
+  INFLUX_PORT: "8086"
+  REDIS_HOST: {{ printf "%s-master" (include "common.names.fullname" ( index .Subcharts "redis" )) }}
+  REDIS_PORT: "6379"

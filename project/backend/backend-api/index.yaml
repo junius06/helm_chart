@@ -1,0 +1,13 @@
+apiVersion: v1
+entries:
+  backend-api:
+  - apiVersion: v2
+    appVersion: 1.16.0
+    created: "2024-02-19T20:16:28.499639+09:00"
+    description: init code
+    digest: 0d61690c7dfdea9f4f8e4b1c3900ceb24267649a978c16a4fcb4b6a5d6a884ac
+    name: backend-api
+    urls:
+    - charts/backend-api-0.1.0.tgz
+    version: 0.1.0
+generated: "2024-02-19T20:16:28.494405+09:00"

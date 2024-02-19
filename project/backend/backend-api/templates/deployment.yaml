@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend-api.serviceName" . }}
+  labels:
+    {{- include "backend-api.labels" . | nindent 4 }}
+    {{- include "backend-api.app" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.common.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "backend-api.selectorLabels" . | nindent 6 }}
+      {{- include "backend-api.app" . | nindent 6 }}
+  strategy:
+    type: {{ .Values.api_server.strategy.type }}
+  template:
+    metadata:
+      {{- with .Values.vault.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "backend-api.selectorLabels" . | nindent 8 }}
+        {{- include "backend-api.app" . | nindent 8 }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.common.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.vault.serviceAccountName }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.common.image.repository }}:{{ .Values.common.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.common.image.pullPolicy }}
+          ports:
+            - containerPort: {{ index .Values.api_server.service.ports 0 "port" }} 
+          command: {{ .Values.vault.command }}
+          args: [ "source /vault/secrets/env && node bin/api.js" ]
+          command: [ 'node', './bin/api.js' ]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

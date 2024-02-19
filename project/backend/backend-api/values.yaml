@@ -1,0 +1,157 @@
+# Default values for backend-api.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+vault:
+  serviceAccountName: vault
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/agent-inject-status: update
+    vault.hashicorp.com/agent-inject-secret-env: project/data/dev/backend
+    vault.hashicorp.com/agent-inject-template-env: |
+
+      {{- with secret "project/data/dev/backend" -}}
+      #!/bin/sh
+      set -e
+      {{- range $key, $value := .Data.data }}
+      export {{ $key }}={{ $value }}
+      {{- end }}
+      {{- end }}
+
+    vault.hashicorp.com/service: "http://$KUBERNETES_PORT_443_TCP_ADDR:8200"
+    vault.hashicorp.com/role: "dev"
+    vault.hashicorp.com/tls-skip-verify: "true"
+    vault.hashicorp.com/agent-init-first: "true"
+    vault.hashicorp.com/log-level: debug # default info
+  command: [ "sh", "-c" ]
+  args: [ "source /vault/secrets/env" ]
+
+common:
+  replicaCount: 3
+  image:
+    repository: private_registry/image_path/image_name
+    pullPolicy: Always
+    tag: dev
+  imagePullSecrets: 
+    - name: registry_login_secret
+  restartPolicy: Always
+
+  command: [  ]
+  args: [  ]
+
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
+    
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
+    
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
+    
+  customStartupProbe: {}
+  
+  customLivenessProbe: {}
+  
+  customReadinessProbe: {}
+  
+  resources:
+    limits: {}
+    requests: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+api_server:
+  strategy:
+    type: RollingUpdate
+  service:
+    type: LoadBalancer
+    ports:
+      - name: "3000"
+        port: 3000
+        targetPort: 3000
+        protocol: TCP
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
