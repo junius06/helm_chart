@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rangeApp.name" . }}-api
+  labels:
+    {{- include "rangeApp.labels" . | nindent 4 }}
+    {{- include "rangeApp.api" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.applications.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rangeApp.selectorLabels" . | nindent 6 }}
+      {{- include "rangeApp.api" . | nindent 6 }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      # {{- with .Values.vault.annotations }}
+      # annotations:
+      #   {{- toYaml . | nindent 8 }}
+      # {{- end }}
+      labels:
+        {{- include "rangeApp.selectorLabels" . | nindent 8 }}
+        {{- include "rangeApp.api" . | nindent 8 }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # serviceAccountName: {{ .Values.vault.serviceAccountName }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}/api:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.applications.api.ports }}
+          ports:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          #  - containerPort: {{ index .Values.applications.api.ports 0 "port" }} 포트 인덱스가 많을 경우 사용
+          command: [ 'node', './bin/api.js' ]
+          # command: {{ .Values.applications.api.command }} vault 적용시 주석해제
+          # args: {{ .Values.applications.api.args }} 
+          envFrom:
+            - secretRef:
+                name: rangeApp-common-configmap # DB 접근정보에 대해 저장 / vault 적용시 삭제
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

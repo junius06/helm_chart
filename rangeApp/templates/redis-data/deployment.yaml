@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rangeApp.name" . }}
+  labels:
+    {{- include "rangeApp.labels" . | nindent 4 }}
+    {{- include "rangeApp.redisData" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.applications.redisData.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rangeApp.selectorLabels" . | nindent 6 }}
+      {{- include "rangeApp.redisData" . | nindent 6 }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "rangeApp.selectorLabels" . | nindent 8 }}
+        {{- include "rangeApp.redisData" . | nindent 8 }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}/redisData:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [ 'node', './bin/redisData.js' ]
+          envFrom:
+            - secretRef:
+                name: rangeApp-common-configmap
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -1,44 +1,67 @@
-# Default values for backend-api.
+# Default values for wemix-fi-backend.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-vault:
-  serviceAccountName: vault
-  annotations:
-    vault.hashicorp.com/agent-inject: "true"
-    vault.hashicorp.com/agent-inject-status: update
-    vault.hashicorp.com/agent-inject-secret-env: project/data/dev/backend
-    vault.hashicorp.com/agent-inject-template-env: |
+replicaCount: 1
 
-      {{- with secret "project/data/dev/backend" -}}
-      #!/bin/sh
-      set -e
-      {{- range $key, $value := .Data.data }}
-      export {{ $key }}={{ $value }}
-      {{- end }}
-      {{- end }}
+strategy:
+  type: RollingUpdate
 
-    vault.hashicorp.com/service: "http://$KUBERNETES_PORT_443_TCP_ADDR:8200"
-    vault.hashicorp.com/role: "dev"
-    vault.hashicorp.com/tls-skip-verify: "true"
-    vault.hashicorp.com/agent-init-first: "true"
-    vault.hashicorp.com/log-level: debug # default info
-  command: [ "sh", "-c" ]
-  args: [ "source /vault/secrets/env" ]
+image:
+  registry: docker.io
+  repository: junius06
+  pullPolicy: Always
+  tag: "dev"
 
-common:
-  replicaCount: 3
-  image:
-    repository: private_registry/image_path/image_name
-    pullPolicy: Always
-    tag: dev
-  imagePullSecrets: 
-    - name: registry_login_secret
-  restartPolicy: Always
+imagePullSecrets: 
+  - name: docker-registry
+nameOverride: ""
+fullnameOverride: ""
 
-  command: [  ]
-  args: [  ]
+applications:
+  api:
+    replicaCount: 3
+    ports:
+      - name: "api-svc"
+        containerPort: 8080
+        protocol: TCP
+    service: 
+      type: LoadBalancer
+    command: [ 'sh', '-c' ]
+    args: [ 'source /vault/secrets/env && node ./bin/api.js' ]
 
+  mysqlData:
+    replicaCount: 1
+    command: [ 'sh', '-c' ]
+    args: [ 'source /vault/secrets/env && node ./bin/range.target.js' ]
+    list:
+      - one
+      - two
+      - three
+      - four
+      - five
+      - fix
+      - seven
+
+  redisData: 
+    replicaCount: 1
+    command: [ 'sh', '-c' ]
+    args: [ 'source /vault/secrets/env && node ./bin/instance.js' ]
+
+  influxData:
+    replicaCount: 1
+    command: [ 'sh', '-c' ]
+    list: 
+      - command01
+      - command02
+      - command03
+      - command04
+      - command05
+      - command06
+      - command07
+      - command08
+
+probe:
   startupProbe:
     enabled: false
     initialDelaySeconds: 10
@@ -68,30 +91,8 @@ common:
   customLivenessProbe: {}
   
   customReadinessProbe: {}
-  
-  resources:
-    limits: {}
-    requests: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
 
-api_server:
-  strategy:
-    type: RollingUpdate
-  service:
-    type: LoadBalancer
-    ports:
-      - name: "3000"
-        port: 3000
-        targetPort: 3000
-        protocol: TCP
-
-nameOverride: ""
-fullnameOverride: ""
+#########################################################
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -114,6 +115,10 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
 
 ingress:
   enabled: false

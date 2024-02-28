@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rangeApp.name" . }}
+  labels:
+    {{- include "rangeApp.labels" . | nindent 4 }}
+    {{- include "rangeApp.api" . | nindent 4 }}
+spec:
+  type: {{ .Values.applications.api.service.type }}
+  {{- with .Values.applications.api.ports }}
+  ports: {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    {{- include "rangeApp.selectorLabels" . | nindent 4 }}
+    {{- include "rangeApp.api" . | nindent 4 }}

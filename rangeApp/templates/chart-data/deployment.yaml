@@ -1,0 +1,43 @@
+{{ range .Values.applications.chartData.list }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Chart.Name }}-{{ . }}
+  labels:
+    {{- include "rangeApp.labels" $ | nindent 4 }}
+    {{- include "rangeApp.chartData" $ | nindent 4 }}
+spec:
+  {{- if not $.Values.autoscaling.enabled }}
+  replicas: {{ $.Values.applications.chartData.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "rangeApp.selectorLabels" $ | nindent 6 }}
+      {{- include "rangeApp.chartData" $ | nindent 6 }}
+  {{- with $.Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "rangeApp.selectorLabels" $ | nindent 8 }}
+        {{- include "rangeApp.chartData" $ | nindent 8 }}
+    spec:
+      restartPolicy: Always
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ $.Chart.Name }}
+          image: "{{ $.Values.image.registry }}/{{ $.Values.image.repository }}/chartData:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command: [ 'node', './bin/charts/chartData-{{ . }}.js' ]
+          envFrom:
+            - secretRef:
+                name: rangeApp-common-configmap
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+{{ end }}

@@ -1,16 +1,8 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "backend-api.name" -}}
+{{- define "rangeApp.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{- define "backend-api.serviceName" -}}
-project-{{ include "backend-api.name" . }}-server
-{{- end }}
-
-{{- define "project.name" -}}
-projectfi
 {{- end }}
 
 {{/*
@@ -18,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "backend-api.fullname" -}}
+{{- define "rangeApp.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -34,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "backend-api.chart" -}}
+{{- define "rangeApp.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "backend-api.labels" -}}
-helm.sh/chart: {{ include "backend-api.chart" . }}
-{{ include "backend-api.selectorLabels" . }}
+{{- define "rangeApp.labels" -}}
+helm.sh/chart: {{ include "rangeApp.chart" . }}
+{{ include "rangeApp.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -53,24 +45,33 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "backend-api.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "backend-api.name" . }}
-{{- end }}
-
-{{/*
-Container labels
-*/}}
-{{- define "backend-api.app" -}}
-app: {{ .Chart.Name }}-role
+{{- define "rangeApp.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "rangeApp.name" . }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "backend-api.serviceAccountName" -}}
+{{- define "rangeApp.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "backend-api.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "rangeApp.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{/*
+Each pods labels
+*/}}
+{{- define "rangeApp.api" -}}
+role: {{ include "rangeApp.name" . }}-api
+{{- end }}
+{{- define "rangeApp.mysqlData" -}}
+role: {{ include "rangeApp.name" . }}-mysqlData
+{{- end }}
+{{- define "rangeApp.redisData" -}}
+role: {{ include "rangeApp.name" . }}-redisData
+{{- end }}
+{{- define "rangeApp.influxData" -}}
+role: {{ include "rangeApp.name" . }}-influxData
 {{- end }}
